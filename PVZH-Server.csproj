@@ -1,10 +1,11 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>PVZH_Server</RootNamespace>
+    <UserSecretsId>e3bbc196-7525-4b81-97b9-9dacb2756c2a</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
