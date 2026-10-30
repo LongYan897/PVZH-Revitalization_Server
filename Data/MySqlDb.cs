@@ -1,20 +1,11 @@
-using MySqlConnector;
+﻿using MySqlConnector;
+using Microsoft.Extensions.Configuration;
 
 namespace PVZH_Server.Data;
-
-/// <summary>
-/// MySQL 连接工厂：连接串来自 appsettings.Development.json 的 ConnectionStrings:MySql。<br/>
-/// 用法：await using var conn = await db.OpenAsync();
-/// </summary>
-public class MySqlDb(IConfiguration config)
+public class MySqlDb(IConfiguration configuration)
 {
-    private readonly string _connStr = config.GetConnectionString("MySql")
-        ?? throw new InvalidOperationException("缺少连接串 ConnectionStrings:MySql（见 appsettings.Development.json）");
-
-    public async Task<MySqlConnection> OpenAsync()
+    public MySqlConnection CreateMySqlConnection()
     {
-        var conn = new MySqlConnection(_connStr);
-        await conn.OpenAsync();
-        return conn;
+        return new MySqlConnection(configuration.GetConnectionString("MySql"));
     }
 }
