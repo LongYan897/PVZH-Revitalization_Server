@@ -11,6 +11,8 @@ public class LoginMessage
 public enum LoginCode
 {
     Success = 0,
-    LoginPlayerNotFoundOrPasswordIncorrect = 1,
-    RegisterNameOrEmailExisted = 2
+    LoginPlayerNotFound = 1,
+    LoginPasswordIncorrect = 2,
+    RegisterNameExisted = 3,
+    RegisterNameCannotBeWhiteSpace = 4
 }

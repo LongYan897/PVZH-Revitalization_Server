@@ -1,6 +1,14 @@
-@PVZH_Server_HostAddress = http://localhost:5065
+@host = http://localhost:5065
 
-GET {{PVZH_Server_HostAddress}}/weatherforecast/
-Accept: application/json
+
+POST {{host}}/api/Game/login
+Content-Type: application/json
+
+{
+  "displayName": "Superrex",
+  "password": "Lele25066"
+}
 
 ###
+GET {{host}}/api/Game/get/profile
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6ImVmMDZkODgzLTFkNGUtNDdhOS05NjgxLWFjMDhkOWZjNWIyZCIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL25hbWUiOiJTdXBlcnJleCIsImV4cCI6MTc5NjA0Nzg2MSwiaXNzIjoiUFZaSFJfU0VSVkVSIiwiYXVkIjoiUFZaSFJfUExBWUVSIn0.qkvzfvQOHiXiwCsVxPqNcI96J_lk3BTUD7w8GyYFSKE

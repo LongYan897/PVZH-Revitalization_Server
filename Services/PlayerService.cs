@@ -3,7 +3,8 @@ using PVZH_Server.DTOs;
 using PVZH_Server.Repositories;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using MailKit;
+using Resend;
+using PVZH_Server.Models;
 
 namespace PVZH_Server.Services;
 
@@ -16,14 +17,14 @@ public class PlayerService : IPlayerService
             new Claim(ClaimTypes.NameIdentifier,PlayerID),
             new Claim(ClaimTypes.Name,DisplayName)
         };
-        var key = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes("DST9DrpB21VRcN47y3nohum3tssuJppyqkn7DFHkXRKHT5jfGziGwm1dLwqs+B6Gq4dM7zr6BTNeNl42/KFDbw=="));
+        var key = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]??""));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var token = new JwtSecurityToken(
-            issuer: "PVZHR",
-            audience: "PVZHR_PLAYER",
+            issuer: _configuration["Jwt:Issuer"],
+            audience: _configuration["Jwt:Audience"],
             claims: claims,
-            expires: DateTime.UtcNow.AddHours(12),
+            expires: DateTime.UtcNow.AddMonths(1),
             signingCredentials: creds
         );
         return new JwtSecurityTokenHandler().WriteToken(token);
@@ -35,28 +36,45 @@ public class PlayerService : IPlayerService
         _repository = repository;
         _configuration = configuration;
     }
-    public async Task<LoginMessage> LoginByEmail(LoginRequest request)
-    {
-        throw new NotImplementedException();
-    }
 
-    public async Task<LoginMessage> LoginByName(DisplaynameLoginRequest request)
+    public async Task<LoginMessage> LoginByName(LoginRequest request)
     {
-        throw new NotImplementedException();
+        Player? player = await _repository.GetPlayerByNameAsync(request.DisplayName);
+        if (player == null)
+            return new LoginMessage() { Code = LoginCode.LoginPlayerNotFound, DisplayName = request.DisplayName, Token = null };
+        if (player.Password != request.Password)
+            return new LoginMessage() { Code = LoginCode.LoginPasswordIncorrect, DisplayName = request.DisplayName, Token = null };
+        return new LoginMessage()
+        {
+            Code = LoginCode.Success,
+            DisplayName = request.DisplayName,
+            Token = GenerateToken(request.DisplayName, player.PlayerID)
+        };
     }
 
     public async Task<LoginMessage> Register(RegisterRequest request)
     {
-        if (await _repository.GetPlayerByNameAsync(request.DisplayName) != null 
-            || await _repository.GetPlayerByEmailAsync(request.Email) != null) 
-            return new LoginMessage() {DisplayName = null,Token = null,Code = LoginCode.RegisterNameOrEmailExisted  };
-        var playerID = Guid.NewGuid().ToString();
+        if (await _repository.GetPlayerByNameAsync(request.DisplayName) != null) 
+            return new LoginMessage() {DisplayName = null,Token = null,Code = LoginCode.RegisterNameExisted  };
 
+        var playerID = Guid.NewGuid().ToString();
+        await _repository.AddPlayer(request.DisplayName,request.Password,playerID);
         return new LoginMessage()
         {
             DisplayName = request.DisplayName,
             Token = GenerateToken(request.DisplayName, playerID),
             Code = LoginCode.Success
+        };
+    }
+    public async Task<ProfileInfo> GetPlayerAsync(string playerId)
+    {
+        Player? player = await _repository.GetPlayerByIdAsync(playerId);
+        if (player == null)
+            return new ProfileInfo { Code = PlayerCode.PlayerNotExisted, DisplayName = null };
+        return new ProfileInfo
+        {
+            Code = PlayerCode.Success,
+            DisplayName = player.DisplayName
         };
     }
 }

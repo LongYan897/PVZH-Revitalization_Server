@@ -1,7 +1,6 @@
 ﻿namespace PVZH_Server.DTOs;
 public class RegisterRequest
 {
-    public required string Email;
-    public required string Password;
-    public required string DisplayName;
+    public required string Password { get; set; }
+    public required string DisplayName { get; set; }
 }

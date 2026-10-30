@@ -5,5 +5,5 @@ public interface IPlayerRepository
 {
     Task<Player?> GetPlayerByIdAsync(string PlayerId);
     Task<Player?> GetPlayerByNameAsync(string DisplayName);
-    Task<Player?> GetPlayerByEmailAsync(string DisplayEmail);
+    Task AddPlayer(string playerName, string password, string playerId);
 }
