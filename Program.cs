@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using PVZH_Server.Data;
+using PVZH_Server.Hubs;
 using PVZH_Server.Repositories;
 using PVZH_Server.Services;
 using System.IdentityModel.Tokens;
@@ -11,6 +12,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddControllers();
+
+builder.Services.AddSignalR();
 
 builder.Services.AddSingleton<MySqlDb>();
 builder.Services.AddScoped<IPlayerRepository, PlayerRepository>();
@@ -44,5 +47,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<GameHub>("/gamehub");
 
 app.Run();

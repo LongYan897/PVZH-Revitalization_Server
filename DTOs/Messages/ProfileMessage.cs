@@ -1,5 +1,5 @@
 ﻿namespace PVZH_Server.DTOs;
-public class ProfileInfo : PlayerMessage
+public class ProfileMessage : PlayerMessage
 {
     public required string? DisplayName { get; set; }
 

@@ -7,5 +7,6 @@ public class PlayerMessage
 public enum PlayerCode
 {
     Success = 0,
-    PlayerNotExisted = 1
+    PlayerNotExisted = 1,
+    OperationCannotRepeat = 2,
 }
