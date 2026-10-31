@@ -129,7 +129,7 @@ public class PlayerService : IPlayerService
                 }
                 );
         }
-        return new RelationMessages() { relations = rms };
+        return new RelationMessages() { Relations = rms };
     }
     public async Task<FRProcessMessage> ProcessFRMessage(string playerId, ApproveFRRequest request)
     {

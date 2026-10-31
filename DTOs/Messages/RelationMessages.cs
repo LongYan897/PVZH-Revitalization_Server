@@ -1,5 +1,5 @@
 ﻿namespace PVZH_Server.DTOs;
 public class RelationMessages
 {
-    public required List<RelationMessage> relations { get; set; }
+    public required List<RelationMessage> Relations { get; set; }
 }

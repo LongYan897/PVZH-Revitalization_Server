@@ -22,7 +22,8 @@ public class GameController : ControllerBase
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] DTOs.RegisterRequest request)
     {
-        if (string.IsNullOrEmpty(request.DisplayName) || string.IsNullOrWhiteSpace(request.DisplayName))
+        if (string.IsNullOrEmpty(request.DisplayName) || string.IsNullOrWhiteSpace(request.DisplayName) ||
+            string.IsNullOrWhiteSpace(request.Password) || string.IsNullOrEmpty(request.Password))
             return Ok(
                 new LoginMessage() {
                     Code = LoginCode.RegisterNameCannotBeWhiteSpace,
