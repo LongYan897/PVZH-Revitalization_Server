@@ -34,8 +34,9 @@ api端口：
 无需请求体    
 返回体：     
 {     
-	DisplayName : 玩家名
-	Code : 处理结果码，结果只可能为0    
+	DisplayName : 玩家名     
+	Diamond : 玩家钻石数       
+	Code : 处理结果码，结果只可能为0     
 }     
 该api访问需要token    
 

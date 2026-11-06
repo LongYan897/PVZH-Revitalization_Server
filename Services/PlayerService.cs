@@ -16,6 +16,8 @@ public interface IPlayerService
     Task<CheckFRMessages> CheckFriendRequest(string playerId);
     Task<RelationMessages> GetRelationAsync(string playerId);
     Task<FRProcessMessage> ProcessFRMessage(string playerId, ApproveFRRequest request);
+    Task<RankMessage> GetRank(string playerId, RankRequest request);
+    Task<FriendMessage> SendMessage(string playerId, FriendMessageRequest request);
 }
 public class PlayerService : IPlayerService
 {
@@ -77,23 +79,28 @@ public class PlayerService : IPlayerService
     {
         Player? player = await _repository.GetPlayerByIdAsync(playerId);
         if (player == null)
-            return new ProfileMessage { Code = PlayerCode.PlayerNotExisted, DisplayName = null };
+            return new ProfileMessage { Code = PlayerCode.PlayerNotExisted, DisplayName = null,Diamond = 0 };
         return new ProfileMessage
         {
             Code = PlayerCode.Success,
-            DisplayName = player.DisplayName
+            DisplayName = player.DisplayName,
+            Diamond = player.Diamond
         };
     }
     public async Task<FriendRMessage> SendFriendRequest(string playerId,FriendRequest request)
     {
         var recipient = await _repository.GetPlayerByNameAsync(request.FriendName);
-        if (recipient == null) return new FriendRMessage() { Code = PlayerCode.PlayerNotExisted , FriendId = null};
-        var frs = await _repository.GetFriendRequest(recipient.PlayerID);
-        if (frs.Exists(fr => fr.recipientId == recipient.PlayerID)) 
-            return new FriendRMessage() { Code = PlayerCode.OperationCannotRepeat, FriendId = recipient.PlayerID };
+
+        if (recipient == null) return new FriendRMessage() { Code = PlayerCode.PlayerNotExisted, FriendId = null };
+
         if (playerId == recipient.PlayerID)
             return new FriendRMessage() { Code = PlayerCode.PlayerNotExisted, FriendId = recipient.PlayerID };
+
+        if (await _repository.HasSentFriendRequest(playerId, recipient.PlayerID)|| await _repository.AreFriends(playerId,recipient.PlayerID))
+            return new FriendRMessage() { Code = PlayerCode.OperationCannotRepeat, FriendId = recipient.PlayerID };
+
         await _repository.SendFriendRequest(playerId, recipient.PlayerID);
+
         return new FriendRMessage() { Code = PlayerCode.Success , FriendId=recipient.PlayerID};
     }
     public async Task<CheckFRMessages> CheckFriendRequest(string playerId)
@@ -102,12 +109,8 @@ public class PlayerService : IPlayerService
         var FRMs = new List<CheckFRMessage>();
         foreach (FriendRequestData data in datas)
         {
-            var player = await _repository.GetPlayerByIdAsync(data.senderId);
-            if (player == null) {
-                await _repository.DeleteFriendRequest(data.senderId,playerId);
-                continue; }
             FRMs.Add(
-                new CheckFRMessage() { SenderName = player.DisplayName}
+                new CheckFRMessage() { SenderName = data.senderName}
                 );
         }
         return new CheckFRMessages() { Requests = FRMs };
@@ -118,14 +121,11 @@ public class PlayerService : IPlayerService
         var rms = new List<RelationMessage>();
         foreach (var rd in rds)
         {
-            var player1 = await _repository.GetPlayerByIdAsync(rd.Player1Id);
-            var player2 = await _repository.GetPlayerByIdAsync(rd.Player2Id);
-            if (player1 == null || player2 == null) continue;
             rms.Add(
                 new RelationMessage()
                 {
-                    Player1Name = player1.DisplayName,
-                    Player2Name = player2.DisplayName
+                    Player1Name = rd.Player1Name,
+                    Player2Name = rd.Player2Name
                 }
                 );
         }
@@ -134,18 +134,63 @@ public class PlayerService : IPlayerService
     public async Task<FRProcessMessage> ProcessFRMessage(string playerId, ApproveFRRequest request)
     {
         var friend = await _repository.GetPlayerByNameAsync(request.FriendName);
-        if (friend == null)
+        if (friend == null || await _repository.HasSentFriendRequest(friend.PlayerID,playerId))
             return new FRProcessMessage() { Code = PlayerCode.PlayerNotExisted, RequestResult = null, FriendId = null };
-        var relations = await _repository.GetRelationsAsync(playerId);
-        if (relations.Exists(r => (r.Player1Id == playerId || r.Player2Id == playerId)
-        && (r.Player1Id == friend.PlayerID || r.Player2Id == friend.PlayerID))){
-            return new FRProcessMessage() { Code = PlayerCode.PlayerNotExisted, RequestResult = null, FriendId = null };
+
+        if (await _repository.AreFriends(playerId,friend.PlayerID)){
+            return new FRProcessMessage() { Code = PlayerCode.OperationCannotRepeat, RequestResult = null, FriendId = null };
         }
-        Console.WriteLine($"{playerId}-{friend.PlayerID}");
+
+        await _repository.DeleteFriendRequest(friend.PlayerID, playerId);
+        await _repository.DeleteFriendRequest(playerId, friend.PlayerID);
+
         if (!request.Accept)
             return new FRProcessMessage() { Code = PlayerCode.Success, RequestResult = FRCode.Refuse,FriendId = friend.PlayerID };
+
         await _repository.EstablishRelationship(playerId, friend.PlayerID);
-        await _repository.DeleteFriendRequest(friend.PlayerID,playerId);
+
         return new FRProcessMessage() { Code = PlayerCode.Success, RequestResult = FRCode.Accept,FriendId = friend.PlayerID };
+    }
+    public async Task<RankMessage> GetRank(string playerId, RankRequest request)
+    {
+        if (request.Type == CheckRankType.Person) {
+            var player = await _repository.GetPlayerByIdAsync(playerId);
+            var rank = new Dictionary<string, int>();
+            rank.Add(
+                player?.DisplayName??"",
+                await _repository.GetRankPersonally(playerId,(int)request.Mode)
+                );
+            return new RankMessage
+            {
+                Mode = request.Mode,
+                Score = rank
+            };
+        }
+        else
+        {
+            var ranks = await _repository.GetRank((int)request.Mode, request.Page ?? 1);
+            var newRanks = new Dictionary<string, int>();
+            foreach (var rank in ranks)
+            {
+                newRanks.Add(
+                    rank.PlayerName,
+                    rank.Score
+                    );
+            }
+            return new RankMessage
+            {
+                Mode = request.Mode,
+                Score = newRanks
+            };
+        }
+    }
+    public async Task<FriendMessage> SendMessage(string playerId, FriendMessageRequest request)
+    {
+        var friend = await _repository.GetPlayerByNameAsync(request.FriendName);
+        if (friend == null || friend.PlayerID == playerId)
+            return new FriendMessage() { Code = PlayerCode.PlayerNotExisted , FriendId = null };
+        if (!await _repository.AreFriends(playerId, friend.PlayerID))
+            return new FriendMessage() { Code = PlayerCode.PlayerNotExisted, FriendId = friend.PlayerID };
+        return new FriendMessage() { Code = PlayerCode.Success, FriendId = friend.PlayerID };
     }
 }

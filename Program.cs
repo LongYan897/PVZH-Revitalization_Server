@@ -18,8 +18,11 @@ builder.Services.AddSignalR();
 builder.Services.AddSingleton<MySqlDb>();
 builder.Services.AddScoped<IPlayerRepository, PlayerRepository>();
 builder.Services.AddScoped<IPlayerService, PlayerService>();
+builder.Services.AddSingleton<IMatchService, MatchService>();
+builder.Services.AddSingleton<IBattleService, BattleService>();
+builder.Services.AddHostedService<MatchManager>();
 
-var jwtKey = builder.Configuration["Jwt:Key"]; // 读取你的 appsettings.json 里的密钥
+var jwtKey = builder.Configuration["Jwt:Key"];
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
